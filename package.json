@@ -1,0 +1,12 @@
+{
+    "name": "kanDoList",
+    "main": "app.html",
+    "window": {
+        "frame": false,
+        "toolbar": false,
+        "icon": "./icon.png"
+    },
+    "version": "2.0.0",
+    "single-instance": true,
+    "chromium-args": "--disable-devtools --child-clean-exist"
+}

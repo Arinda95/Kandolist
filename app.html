@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Kan Do List</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/semantic/semantic.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/lineicons/LineIcons.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/jqueryui/jquery-ui.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="assets/css/app.css" />
+    <script src="assets/js/vue/vue.min.js"></script>
+</head>
+<body>
+<div id="ao">
+    <div class="topbar">
+        <div class="ui menu topmenu">
+                <div class="topiconLogo">
+                    <img src="assets/images/KLogoM.svg" class="topLogo">
+                </div>
+                <div class="topiconTitle">
+                    <h1>KanDoList</h1>
+                </div>
+            <div class="center menu draggable" @click="detectWinSize()">
+                <div class="menucenter"></div>
+            </div>
+            <div class="right menu">
+                <div class="topicon" id="minToTray" title="Minimize window to tray area">
+                    <i class="lni-chevron-down"></i>
+                </div>
+                <div class="topicon" id="mminimize" @click="minimize()" title="Minimize window">
+                    <i class="lni-minus"></i>
+                </div>
+                <div class="topicon" id="mmaximize1" v-if="opTemp.userCtrls.maxState === 1" @click="resize()" title="Resize window from fullscreen">
+                    <i class="lni-stop"></i>
+                </div>
+                <div class="topicon" id="mmaximize2" v-if="opTemp.userCtrls.maxState === 0" @click="maximize()" title="Maximize to fullscreen">
+                    <i class="lni-full-screen"></i>
+                </div>
+                <div class="topicon closer" id="mclose" @click="close()" title="Close application">
+                    <i class="lni-close"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui grid" id="centermain">
+            <div class="column" id="main">
+                <div class="mainView">
+                    <div id="projectorganizer" class="view" v-if="opTemp.userCtrls.activeProjectsView === 'catalogue'">
+                        <div id="boardcatalogue">
+                            <div class="ui menu" id="cataloguemenu">
+                                <div class="item" id="addnew" title="Create a new project">
+                                    <div class="ui primary button" @click="startCreator()">Create New Project</div>
+                                </div>
+                                <div class="item" id="openfile" title="Search and open kandolist files from your hard drive">
+                                    <form action="/" method="POST" enctype="multipart/form-data">
+                                        <input type="file" name="uploadedktdfile" multiple id="fileUpload" accept=".kdl" nwworkingdir/>
+                                        <input type="file" id="fileDownload" accept=".kdl" nwsaveas nwworkingdir/>
+                                        <div class="ui primary button" @click="uploadFile()">Open Project Files</div>
+                                    </form>
+                                </div>
+                                <div class="right menu">
+                                    <div class="helpericon2" id="firsthelp" @click="openHelperModal1()" title="If you ever feel lost, i'm here for you.">
+                                        <i class="lni-question-circle"></i>
+                                    </div>
+                                    <div class="helpericon2" id="firsthelp" @click="openAbout()" title="About me.">
+                                        <i class="lni-home"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ui grid" id="cataloguepanel">
+                                <div class="sixteen wide column" id="catalogueright" v-if="showTopCards === true">
+                                    <div class="cards">
+                                            <div class="ui primary"><p id="head">Opened files</p></div>
+                                            <div class="card" v-for="(project, index) in _.uniq(projects)">
+                                                <div class="ctrlset2">
+                                                    <div class="ctrl2" title="Open Workflow" @click="catalogueToWorkFlow(index)"><i class="folder down icon"></i></div>
+                                                    <div class="ctrl2" title="Update project details" @click="startProjectUpdator(index)"><i class="write left icon"></i></div>
+                                                    <div class="ctrl2 del" title="Remove project" @click="deleteCheck(index)"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="content" @click="catalogueToWorkFlow(index)">
+                                                    <div class="cheader">
+                                                        <p class="boldp">{{ project.title }}</p>
+                                                    </div>
+                                                    <div class="description">
+                                                        <p class="textpp">{{ project.description }}</p>
+                                                    </div>
+                                                </div>
+                                                <div class="timelineBox" @click="catalogueToWorkFlow(index)">
+                                                    <p>Starting <span id="timelineBoxDate">{{ project.fromDate }}</span></p>
+                                                    <p>Deadline <span id="timelineBoxDate">{{ project.deadline }}</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                                <div class="sixteen wide column" id="catalogueright">
+                                    <div class="cards">
+                                        <div class="ui primary"><p id="head">Recently opened</p></div>
+                                        <div class="card" v-for="(project, index) in _.uniq(recentlyOpened.slice(0, 5))">
+                                            <div class="ctrlset2">
+                                                <div class="ctrl3" title="Open Workflow" @click="catalogueToWorkFlow3(index)"><i class="folder down icon"></i></div>
+                                                <div class="ctrl3" title="Update project details" @click="startProjectUpdator2(index)"><i class="write left icon"></i></div>
+                                            </div>
+                                            <div class="content" @click="catalogueToWorkFlow3(index)">
+                                                <div class="cheader">
+                                                    <p class="boldp">{{ project.title }}</p>
+                                                </div>
+                                                <div class="description">
+                                                    <p class="textpp">{{ project.description }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="timelineBox" @click="catalogueToWorkFlow3(index)">
+                                                <p>Starting <span id="timelineBoxDate">{{ project.fromDate }}</span></p>
+                                                <p>Deadline <span id="timelineBoxDate">{{ project.deadline }}</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="sixteen wide column" id="catalogueright">
+                                    <div class="cards2">
+                                        <div class="ui primary"><p id="head">Sample projects</p></div>
+                                        <div class="card" v-for="(project, index) in _.uniq(projects2)">
+                                            <div class="content" @click="catalogueToWorkFlow2(index)">
+                                                <div class="cheader">
+                                                    <p class="boldp">{{ project.title }}</p>
+                                                </div>
+                                                <div class="description">
+                                                    <p class="textpp">{{ project.description }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="timelineBox" @click="catalogueToWorkFlow2(index)">
+                                                <p>Starting <span id="timelineBoxDate">{{ project.fromDate }}</span></p>
+                                                <p>Deadline <span id="timelineBoxDate">{{ project.deadline }}</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+
+
+                        <div id="boardviewer" v-if="opTemp.userCtrls.activeProjectsView === 'boardsView'">
+                            <div class="ui menu" id="cataloguemenu">
+                                <div class="item">
+                                    <button class="ui button" @click="workFlowToCatalogue()">
+                                        <i class="chevron left icon"></i>
+                                    </button>
+                                </div>
+                                <div class="item">
+                                    <button class="ui button"  @click="openAddNewTaskModal()">
+                                        Add Task
+                                    </button>
+                                </div>
+                                <div class="item">
+                                    <button class="ui button" id="saveButton" v-bind:class="{ disabled: saveNeeded }" @click="updateProjectFile(opTemp.activeWorkFlowIndex)">
+                                        save
+                                    </button>
+                                </div>
+                                <div class="item">
+                                    <div class="ui primary"><p>{{ projects[opTemp.activeWorkFlowIndex].title }}</p></div>
+                                </div>
+                                <div class="right menu">
+                                        <div class="helpericon2" @click="openHelperModal2()" title="If you ever feel lost, i'm here for you.">
+                                            <i class="lni-question-circle"></i>
+                                        </div>
+                                        <div class="helpericon2" id="firsthelp" @click="openAbout()" title="About me.">
+                                            <i class="lni-home"></i>
+                                        </div>
+                                    </div>
+                            </div>
+                            <div id="cardboards">
+                                <div class="ui grid" id="actualboard">
+                                    <div class="four wide column stageguide">
+                                        <div class="ui grid">
+                                            <div class="sixteen wide column stageguide">
+                                                <div class="ui grid" id="todotop">
+                                                    <div class="sixteen wide column">
+                                                        <p class="head">To Do ({{ todoTotal }})</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="taskflowbox" id="todo">
+                                            <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].todo)" draggable="true">
+                                                <div class="ctrlset m1" v-if="isNotFirstNotLastInTodo(index)">
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('todo', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('todo', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isFirstButNotOnlyInTodo(index)">
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('todo', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m3" v-if="isFirstAndOnlyInTodo(index)">
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isLastInTodo(index)">
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('todo', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div id="tasktextarea" @click="openTaskViewModal(index, 'todo')">
+                                                <p class="taskdesc">{{ task.description }}</p>
+                                                </div>
+                                                <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                <p class="taskdeadline">{{ task.deadline }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="four wide column stageguide">
+                                        <div class="ui grid" id="beingworkedontop">
+                                            <div class="sixteen wide column stageguide"><p class="head">In progress ({{ beingWorkedOnTotal }})</p></div>
+                                        </div>
+                                        <div class="taskflowbox" id="beingworkedon">
+                                            <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].beingWorkedOn)" draggable="true">
+                                                <div class="ctrlset m0" v-if="isNotFirstNotLastInBeingWorkedOn(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('beingWorkedOn', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('beingWorkedOn', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m1" v-if="isFirstButNotOnlyInBeingWorkedOn(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('beingWorkedOn', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isFirstAndOnlyInBeingWorkedOn(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m1" v-if="isLastInBeingWorkedOn(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('beingWorkedOn', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div id="tasktextarea" @click="openTaskViewModal(index, 'beingWorkedOn')">
+                                                    <p class="taskdesc">{{ task.description }}</p>
+                                                </div>
+                                                <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                <p class="taskdeadline">{{ task.deadline }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="four wide column stageguide">
+                                        <div class="ui grid" id="doublecheckingtop">
+                                            <div class="sixteen wide column stageguide"><p class="head">Finalizing ({{ doubleCheckingTotal }})</p></div>
+                                        </div>
+                                        <div class="taskflowbox" id="doublechecking">
+                                            <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].doubleChecking)" draggable="true">
+                                                <div class="ctrlset m0" v-if="isNotFirstNotLastInDoubleChecking(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('doubleChecking', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('doubleChecking', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m1" v-if="isFirstButNotOnlyInDoubleChecking(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('doubleChecking', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isFirstAndOnlyInDoubleChecking(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m1" v-if="isLastInDoubleChecking(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('doubleChecking', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div id="tasktextarea" @click="openTaskViewModal(index, 'doubleChecking')">
+                                                    <p class="taskdesc">{{ task.description }}</p>
+                                                </div>
+                                                    <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                    <p class="taskdeadline">{{ task.deadline }}</p>
+                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="four wide column stageguide">
+                                        <div class="ui grid" id="finishedtop">
+                                            <div class="sixteen wide column stageguide"><p class="head">Completed ({{ finishedTotal }})</p></div>
+                                        </div>
+                                        <div class="taskflowbox" id="finished">
+                                            <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].finished)" draggable="true">
+                                                <div class="ctrlset m1" v-if="isNotFirstNotLastInFinished(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('finished', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('finished', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isFirstButNotOnlyInFinished(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('finished', index)"><i class="chevron down icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m3" v-if="isFirstAndOnlyInFinished(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div class="ctrlset m2" v-if="isLastInFinished(index)">
+                                                    <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                    <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('finished', index)"><i class="chevron up icon"></i></div>
+                                                    <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                </div>
+                                                <div id="tasktextarea" @click="openTaskViewModal(index, 'finished')">
+                                                    <p class="taskdesc">{{ task.description }}</p>
+                                                </div>
+                                                <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                <p class="taskdeadline">{{ task.deadline }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div id="boardviewer" v-if="opTemp.userCtrls.activeProjectsView === 'boardsView2'">
+                                <div class="ui menu" id="cataloguemenu">
+                                    <div class="item">
+                                        <button class="ui button" @click="workFlowToCatalogue2()">
+                                            <i class="chevron left icon"></i>
+                                        </button>
+                                    </div>
+                                    <div class="item">
+                                        <button class="ui button"  @click="openAddNewTaskModal()">
+                                            Add Task
+                                        </button>
+                                    </div>
+                                    <div class="item">
+                                        <div class="ui primary"><p>{{ projects[opTemp.activeWorkFlowIndex].title }}</p></div>
+                                    </div>
+                                    <div class="right menu">
+                                            <div class="helpericon2" @click="openHelperModal2()" title="If you ever feel lost, i'm here for you.">
+                                                <i class="lni-question-circle"></i>
+                                            </div>
+                                            <div class="helpericon2" id="firsthelp" @click="openAbout()" title="About me.">
+                                                <i class="lni-home"></i>
+                                            </div>
+                                        </div>
+                                </div>
+                                <div id="cardboards">
+                                    <div class="ui grid" id="actualboard">
+                                        <div class="four wide column stageguide">
+                                            <div class="ui grid">
+                                                <div class="sixteen wide column stageguide">
+                                                    <div class="ui grid" id="todotop">
+                                                        <div class="sixteen wide column">
+                                                            <p class="head">To Do ({{ todoTotal }})</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="taskflowbox" id="todo">
+                                                <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].todo)" draggable="true">
+                                                    <div class="ctrlset m1" v-if="isNotFirstNotLastInTodo(index)">
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('todo', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('todo', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isFirstButNotOnlyInTodo(index)">
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('todo', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m3" v-if="isFirstAndOnlyInTodo(index)">
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isLastInTodo(index)">
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('todo', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('todo', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'todo')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div id="tasktextarea" @click="openTaskViewModal(index, 'todo')">
+                                                    <p class="taskdesc">{{ task.description }}</p>
+                                                    </div>
+                                                    <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                    <p class="taskdeadline">{{ task.deadline }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="four wide column stageguide">
+                                            <div class="ui grid" id="beingworkedontop">
+                                                <div class="sixteen wide column stageguide"><p class="head">In progress ({{ beingWorkedOnTotal }})</p></div>
+                                            </div>
+                                            <div class="taskflowbox" id="beingworkedon">
+                                                <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].beingWorkedOn)" draggable="true">
+                                                    <div class="ctrlset m0" v-if="isNotFirstNotLastInBeingWorkedOn(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('beingWorkedOn', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('beingWorkedOn', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m1" v-if="isFirstButNotOnlyInBeingWorkedOn(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('beingWorkedOn', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isFirstAndOnlyInBeingWorkedOn(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m1" v-if="isLastInBeingWorkedOn(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('beingWorkedOn', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('beingWorkedOn', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('beingWorkedOn', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'beingWorkedOn')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div id="tasktextarea" @click="openTaskViewModal(index, 'beingWorkedOn')">
+                                                        <p class="taskdesc">{{ task.description }}</p>
+                                                    </div>
+                                                    <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                    <p class="taskdeadline">{{ task.deadline }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+    
+                                        <div class="four wide column stageguide">
+                                            <div class="ui grid" id="doublecheckingtop">
+                                                <div class="sixteen wide column stageguide"><p class="head">Finalizing ({{ doubleCheckingTotal }})</p></div>
+                                            </div>
+                                            <div class="taskflowbox" id="doublechecking">
+                                                <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].doubleChecking)" draggable="true">
+                                                    <div class="ctrlset m0" v-if="isNotFirstNotLastInDoubleChecking(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('doubleChecking', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('doubleChecking', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m1" v-if="isFirstButNotOnlyInDoubleChecking(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('doubleChecking', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isFirstAndOnlyInDoubleChecking(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m1" v-if="isLastInDoubleChecking(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('doubleChecking', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl forwardtask" title="Move task to next phase" @click="moveTaskForward('doubleChecking', index)"><i class="chevron right icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('doubleChecking', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'doubleChecking')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div id="tasktextarea" @click="openTaskViewModal(index, 'doubleChecking')">
+                                                        <p class="taskdesc">{{ task.description }}</p>
+                                                    </div>
+                                                        <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                        <p class="taskdeadline">{{ task.deadline }}</p>
+                                                    </div>
+                                            </div>
+                                        </div>
+    
+                                        <div class="four wide column stageguide">
+                                            <div class="ui grid" id="finishedtop">
+                                                <div class="sixteen wide column stageguide"><p class="head">Completed ({{ finishedTotal }})</p></div>
+                                            </div>
+                                            <div class="taskflowbox" id="finished">
+                                                <div class="taskcard" v-for="(task, index) in _.uniq(projects[opTemp.activeWorkFlowIndex].finished)" draggable="true">
+                                                    <div class="ctrlset m1" v-if="isNotFirstNotLastInFinished(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('finished', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('finished', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isFirstButNotOnlyInFinished(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl downtask" title="Move task down the list" @click="moveTaskDownward('finished', index)"><i class="chevron down icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m3" v-if="isFirstAndOnlyInFinished(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div class="ctrlset m2" v-if="isLastInFinished(index)">
+                                                        <div class="ctrl backtask" title="Move task to previous phase" @click="moveTaskBackward('finished', index)"><i class="chevron left icon"></i></div>
+                                                        <div class="ctrl uptask" title="Move task up the list" @click="moveTaskUpward('finished', index)"><i class="chevron up icon"></i></div>
+                                                        <div class="ctrl deletetask" title="Delete task" @click="openDeleteTaskConsentModal(index, 'finished')"><i class="trash icon"></i></div>
+                                                    </div>
+                                                    <div id="tasktextarea" @click="openTaskViewModal(index, 'finished')">
+                                                        <p class="taskdesc">{{ task.description }}</p>
+                                                    </div>
+                                                    <p class="tasknumber">{{ humanReadableIndex(index) }}</p>
+                                                    <p class="taskdeadline">{{ task.deadline }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                    </div>
+            </div>
+    </div>
+
+
+    <div class="ui mini modal" id="deleteProjectConsentModal">
+        <div class="modaltop">Remove Check</div>
+        <div class="modalcontent">
+            <br>
+          <p class="boldp2">Are you sure you would like to remove this project?</p>
+          <p class="textp2">{{ opTemp.activeProjectDeleteTitle }}</p>
+        </div>
+        <div class="actions">
+          <div class="ui button modalbuttonyes" @click="deleteProject()">Yes</div>
+          <div class="ui cancel button modalbuttonno">No</div>
+        </div>
+      </div>
+
+
+      <div class="ui mini modal" id="projectCreatorModal">
+            <div class="modaltop">Create new project</div>
+            <div class="modalcontent">
+                <p class="err" v-if="opTemp.projectDetails.showErrMessage === true">{{ opTemp.projectDetails.errMessage }}</p>
+              <p>Title</p>
+              <input class="kinput2" type="text" placeholder="Title" v-model="opTemp.projectDetails.title">
+              <p>Description</p>
+              <textarea class="kinput2" type="text" placeholder="Description" v-model="opTemp.projectDetails.description">
+                  </textarea>
+              <p>Starting Date</p>
+              <input type="text" class="kinput2 calinput" id="fromDate" placeholder="Date">
+              <p>Deadline</p>
+              <input type="text" class="kinput2 calinput" id="deadline" placeholder="Date">
+              <br>
+            </div>
+            <div class="actions">
+              <div class="ui button modalbuttonno" @click="createProject()">Create</div>
+              <div class="ui cancel button modalbuttonyes">Cancel</div>
+            </div>
+          </div>
+
+
+          <div class="ui mini modal" id="projectUpdatorModal">
+                <div class="modaltop">Update project</div>
+                <div class="modalcontent">
+                    <p class="err" v-if="opTemp.projectUpdateDetails.showErrMessage">{{ opTemp.projectUpdateDetails.errMessage }}</p>
+                  <p>Title</p>
+                  <input class="kinput2" type="text" placeholder="Title" v-model="opTemp.projectUpdateDetails.title">
+                  <p>Description</p>
+                  <textarea class="kinput2" type="text" placeholder="Description" v-model="opTemp.projectUpdateDetails.description">
+                      </textarea>
+                  <p>Starting Date</p>
+                  <input type="text" class="kinput2 calinput" id="projectUpdateFromDate" placeholder="Date" v-model="opTemp.projectUpdateDetails.fromDate">
+                  <p>Deadline</p>
+                  <input type="text" class="kinput2 calinput" id="projectUpdateDeadline" placeholder="Date" v-model="opTemp.projectUpdateDetails.deadline">
+                  <br>
+                </div>
+                <div class="actions">
+                  <div class="ui button modalbuttonyes" @click="updateProject()">Update</div>
+                  <div class="ui cancel button modalbuttonno">Cancel</div>
+                </div>
+              </div>
+
+              <div class="ui mini modal" id="updateTaskModal">
+                    <div class="modaltop">Update task</div>
+                    <div class="modalcontent">
+                        <p class="err" v-if="opTemp.taskUpdateDetails.showErrMessage">{{ opTemp.taskUpdateDetails.errMessage }}</p>
+                      <p>Description</p>
+                      <textarea class="kinput2" type="text" placeholder="Description" v-model="opTemp.taskUpdateDetails.description">
+                          </textarea>
+                      <p>Deadline (optional)</p>
+                      <input type="text" class="kinput2 calinput" id="taskUpdateDeadline" placeholder="Date" v-model="opTemp.taskUpdateDetails.deadline">
+                      <br>
+                    </div>
+                    <div class="actions">
+                      <div class="ui button modalbuttonyes" @click="updateTask()">Update</div>
+                      <div class="ui cancel button modalbuttonno">Cancel</div>
+                    </div>
+                  </div>
+
+                  <div class="ui mini modal" id="addNewTaskModal">
+                        <div class="modaltop">Add task</div>
+                        <div class="modalcontent">
+                            <p class="err" v-if="opTemp.taskDetails.showErrMessage">{{ opTemp.taskDetails.errMessage }}</p>
+                          <p>Description</p>
+                          <textarea class="kinput2" type="text" placeholder="Description" v-model="opTemp.taskDetails.description">
+                              </textarea>
+                          <p>Deadline (optional)</p>
+                          <input type="text" class="kinput2 calinput" placeholder="Date" id="taskDeadline">
+                          <br>
+                        </div>
+                        <div class="actions">
+                          <div class="ui button modalbuttonyes" @click="createNewTask()">Add</div>
+                          <div class="ui cancel button modalbuttonno">Cancel</div>
+                        </div>
+                      </div>
+
+                      <div class="ui mini modal" id="deleteTaskConsentModal">
+                            <div class="modaltop">Delete Check</div>
+                            <div class="modalcontent">
+                                <br>
+                              <p>Are you sure you would like to delete this task?</p>
+                              <p class="boldp2">Description</p>
+                              <p class="textp2">{{ opTemp.activeTaskDeleteDescription }}</p>
+                              <p class="boldp2">Deadline</p>
+                              <p class="textp2">{{ opTemp.activeTaskDeleteDeadline }}</p>
+                            </div>
+                            <div class="actions">
+                              <div class="ui button modalbuttonyes" @click="deleteTask()">Yes</div>
+                              <div class="ui cancel button modalbuttonno">No</div>
+                            </div>
+                          </div>
+
+                          <div class="ui mini modal" id="saveReminderModal">
+                            <div class="modaltop">Save Check</div>
+                            <div class="modalcontent">
+                                <br>
+                              <p class="boldp2">You are about to leave an unsaved workflow.</p>
+                              <p class="textp2">Are you sure you would like to leave before saving?</p>
+                            </div>
+                            <div class="actions">
+                              <div class="ui approve button modalbuttonyes" @click="workFlowToCatalogue2()">Yes</div>
+                              <div class="ui button modalbuttonno" v-bind:class="{ disabled: saveNeeded }" @click="updateProjectFile(opTemp.activeWorkFlowIndex)">save</div>
+                              <div class="ui cancel button modalbuttonno">No</div>
+                            </div>
+                          </div>
+
+                          <div class="ui mini modal" id="saveReminderModal2">
+                            <div class="modaltop">Save Check</div>
+                            <div class="modalcontent">
+                                <br>
+                              <p class="boldp2">You are about to leave an unsaved workflow.</p>
+                              <p class="textp2">Are you sure you would like to leave before saving?</p>
+                            </div>
+                            <div class="actions">
+                              <div class="ui approve button modalbuttonyes" @click="close2()">Yes</div>
+                              <div class="ui button modalbuttonno" v-bind:class="{ disabled: saveNeeded }" @click="updateProjectFile(opTemp.activeWorkFlowIndex)">save</div>
+                              <div class="ui cancel button modalbuttonno">No</div>
+                            </div>
+                          </div>
+
+                          <div class="ui mini modal" id="fileDownloadErrorModal">
+                                <div class="modaltop">File Saving error</div>
+                                <div class="modalcontent">
+                                    <br>
+                                  <p>There seems to be an issue saving your project.</p>
+                                  <p class="textp2">{{ opTemp.activeProjectDownloadError }}</p>
+                                </div>
+                                <div class="actions">
+                                  <div class="ui cancel button modalbuttonno">Close</div>
+                                </div>
+                              </div>
+
+                      <div class="ui mini modal" id="taskViewModal">
+                            <div class="modaltop">View task</div>
+                            <div class="modalcontent">
+                            <p class="boldp2">Description</p>
+                            <p class="textp2">{{ opTemp.activeViewDescription }}</p>
+                            <p class="boldp2">Deadline</p>
+                            <p class="textp2">{{ opTemp.activeViewDeadline }}</p>
+                            <br>
+                            </div>
+                            <div class="actions">
+                              <div class="ui button modalbuttonyes" @click="openUpdateTaskModal()">Update task</div>
+                              <div class="ui cancel button modalbuttonno">Close</div>
+                            </div>
+                          </div>
+
+                          <div class="ui small modal" id="introModal">
+                                <div class="modaltop">Getting help.</div>
+                                <div class="modalcontent">
+                                        <p id="modalPText1" class="startertext">If you are ever lost, you can find your way by clicking the <span id="innerico"><i class="lni-question-circle"></i></span> icon on the top right.</p>
+                                        <img src="assets/gifs/help.gif" class="startergif gif">
+                                </div>
+                                <div class="actions">
+                                  <div class="ui approve button modalbuttonyes" @click="closeIntroModal()">Ok, got it!</div>
+                                  <div class="ui cancel button modalbuttonno" @click="neverShowIntroModalAgain()">Don't show me this again</div>
+                                </div>
+                              </div>
+
+
+                              <div class="ui large modal" id="mainHelperModal">
+                                <div class="modaltop">What would you like to know?</div>
+                                <div class="modalcontent">
+                                        <div class="rightsidebar">
+                                            <div class="infoview" v-if="activeHelpView === 1">
+                                                <p id="modalPHeader">Creating Project files.</p>
+                                                <img src="assets/gifs/creating new project .gif" class="gif">
+                                                <p id="modalPText">Click the 'create new project' button on the top menu. This will open a popup to collect project details. Provide a project title, project description and optionally a starting date and deadline then click 'create'. This will open the file save dialog. It is recommended you save the file with the default title as the name. This will save the project to a file. The extension of the file should remain .kdl or the file will not work.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 2">
+                                                    <p id="modalPHeader">Opening Project Files.</p>
+                                                    <img src="assets/gifs/opening existing projects.gif" class="gif">
+                                                    <p id="modalPText">Click the 'open project files' button. This will open an 'open file dialog' in Documents\KanDoList. This is the default save directory of the application. Select one or more files and click open. These files will be loaded into the project catalogue where you can view, update and open them.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 3">
+                                                    <p id="modalPHeader">Updating A Project's Details.</p>
+                                                    <img src="assets/gifs/updating project details.gif" class="gif">
+                                                    <p id="modalPText">Click on the pencil icon <i class="write left icon"></i> on top of the project card. This will open an update popup.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 4">
+                                                    <p id="modalPHeader">Removing A Project.</p>
+                                                    <img src="assets/gifs/delete project.gif" class="gif">
+                                                    <p id="modalPText">Click on the trash icon <i class="trash icon"></i> first from the right on the top of the project card to remove the project. This project will be be deleted however , just removed fom the catalogue.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 5">
+                                                    <p id="modalPHeader">Sample Projects.</p>
+                                                    <img src="assets/gifs/sample project tutorial.gif" class="gif">
+                                                    <p id="modalPText">Sample projects can be used to play around and try out the features of the application.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 6">
+                                                    <p id="modalPHeader">Opening A Project's Task Tracker.</p>
+                                                    <img src="assets/gifs/opening created projects.gif" class="gif">
+                                                    <p id="modalPText">The project task tracker is a simple tool to help you break down your project into multiple small tasks and attempt them one at a time. This tool has four basic stages 'To Do', 'In progress', 'Finalizing' and 'Completed'. A task is added to the 'To do' stage, all tasks start off here and can be moved on to the 'In progress' on stage when the user is working on the task. The task can the be moved to the 'Finalizing' stage for final touches and then to the 'Completed' stage when it is finished. Tasks can be moved froward or backwards freely and they can also be moved up and down the list of any stage depending on priority of the task.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 7">
+                                                    <p id="modalPHeader">Creating Tasks.</p>
+                                                    <img src="assets/gifs/adding a new task.gif" class="gif">
+                                                    <p id="modalPText">Tasks can be added to the task tracker by clicking the 'Add Task' button on the top menu. This will open a popup to take a task description and an optional deadline.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 8">
+                                                    <p id="modalPHeader">Viewing And Updating Tasks.</p>
+                                                    <img src="assets/gifs/Viewing and updating tasks.gif" class="gif">
+                                                    <p id="modalPText">Tasks can be updated by clicking on the task's body. This will open a popup with the option to update the task. Once clicked details of the task can be updated in a popup with current task details.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 9">
+                                                    <p id="modalPHeader">Moving Tasks.</p>
+                                                    <img src="assets/gifs/navigating tasks.gif" class="gif">
+                                                    <p id="modalPText">Tasks can be moved across the task tracker using the directional symbols on top of each task. <i class="chevron-right icon"></i> moves a task forward a stage, <i class="chevron-left icon"></i> moves a task backward a stage, <i class="lni-chevron-down icon"></i> moves a task down the list within the same stage and <i class="chevron-up icon"></i> moves a task up the list within the same stage.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 10">
+                                                    <p id="modalPHeader">Deleting Tasks.</p>
+                                                    <img src="assets/gifs/deleting tasks.gif" class="gif">
+                                                    <p id="modalPText">A task can be deleted using the <i class="trash icon"></i> icon on top of the task the confirming the action.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 11">
+                                                    <p id="modalPHeader">Saving.</p>
+                                                    <img src="assets/gifs/save.gif" class="gif">
+                                                    <p id="modalPText">The positions of tasks in the task tracker can be saved by clicking the 'save' button on the top menu.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 12">
+                                                    <p id="modalPHeader">Getting Help.</p>
+                                                    <img src="assets/gifs/help.gif" class="gif">
+                                                    <p id="modalPText">If you are lost, you can find your way by clicking the <i class="lni-question-circle"></i> icon on the right of the top menu.</p>
+                                            </div>
+                                            <div class="infoview" v-if="activeHelpView === 13">
+                                                    <p id="modalPHeader">About The Application</p>
+                                                    <img src="assets/gifs/about.gif" class="gif">
+                                                    <p id="modalPText">You can find out about the application by clicking the <i class="lni-home"></i> icon on the top right.</p>
+                                            </div>
+                                        </div>
+                                        <div class="leftsidebar">
+                                            <div class="info" id="one" @click="showGif(1)">1. Creating project files.</div>
+                                            <div class="info" id="two" @click="showGif(2)">2. Opening project files.</div>
+                                            <div class="info" id="three" @click="showGif(3)">3. Updating project details.</div>
+                                            <div class="info" id="four" @click="showGif(4)">4. Removing a project.</div>
+                                            <div class="info" id="five" @click="showGif(5)">5. Sample projects.</div>
+                                            <div class="info" id="six" @click="showGif(6)">6. Opening a project's task tracker.</div>
+                                            <div class="info" id="seven" @click="showGif(7)">7. Creating a task.</div>
+                                            <div class="info" id="eight" @click="showGif(8)">8. Updating a task.</div>
+                                            <div class="info" id="nine" @click="showGif(9)">9. Moving a task.</div>
+                                            <div class="info" id="ten" @click="showGif(10)">10. Deleting a task.</div>
+                                            <div class="info" id="eleven" @click="showGif(11)">11. Saving.</div>
+                                            <div class="info" id="twelve" @click="showGif(12)">12. Getting help</div>
+                                            <div class="info" id="thirteen" @click="showGif(13)">13. About the application.</div>
+                                        </div>
+                                </div>
+                                <div class="actions">
+                                  <div class="ui approve button modalbuttonyes" @click="closeIntroModal()">Ok</div>
+                                  <div class="ui cancel button modalbuttonno" @click="neverShowIntroModalAgain()">Close</div>
+                                </div>
+                              </div>
+
+
+                  <div class="ui mini modal" id="aboutModal">
+                    <div class="modaltop">About me</div>
+                    <div class="modalcontent">
+                        <p id="modalPHeader">KanDoList.</p>
+                        <p id="modalPText">KanDoList is a simple, offline project task tracker based on the kanban model. It is developed by Shinobi Applications.</p>
+                        <br>
+                        <a id="modalPText" @click="openSellfy()" class="homelink">https://sellfy.com/shinobi-applications/</a>
+                        <br>
+                      <br>
+                    </div>
+                    <div class="actions">
+                      <div class="ui approve button modalbuttonno">Ok, got it!</div>
+                    </div>
+                  </div>
+
+
+
+</div>
+    <script src="assets/js/jquery/jquery-3.4.1.min.js"></script>
+    <script src="assets/js/jqueryui/jquery-ui.min.js"></script>
+    <script src="assets/js/semantic/semantic.min.js"></script>
+    <script src="assets/js/underscore/underscore.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
